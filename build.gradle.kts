@@ -37,6 +37,7 @@ dependencies {
     testAnnotationProcessor("org.projectlombok:lombok")
     implementation("org.flywaydb:flyway-core:12.10.0")
     implementation("org.flywaydb:flyway-database-postgresql:12.10.0")
+    implementation("me.paulschwarz:springboot4-dotenv:5.1.0")
 }
 
 tasks.withType<Test> {
