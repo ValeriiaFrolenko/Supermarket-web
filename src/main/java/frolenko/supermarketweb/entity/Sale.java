@@ -3,6 +3,8 @@ package frolenko.supermarketweb.entity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 import java.math.BigDecimal;
 
@@ -15,6 +17,18 @@ import java.math.BigDecimal;
 public class Sale {
     @EmbeddedId
     private SaleId id;
+
+    @MapsId("upc")
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @OnDelete(action = OnDeleteAction.RESTRICT)
+    @JoinColumn(name = "upc", nullable = false)
+    private StoreProduct upc;
+
+    @MapsId("checkNumber")
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @OnDelete(action = OnDeleteAction.CASCADE)
+    @JoinColumn(name = "check_number", nullable = false)
+    private CheckTable checkNumber;
 
     @Column(name = "product_number", nullable = false)
     private Integer productNumber;

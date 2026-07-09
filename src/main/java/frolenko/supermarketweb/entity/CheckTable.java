@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.ColumnDefault;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -21,11 +23,15 @@ public class CheckTable {
     @Column(name = "check_number", nullable = false, length = 10)
     private String checkNumber;
 
-    @Column(name = "id_employee", nullable = false)
-    private String idEmployee;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @OnDelete(action = OnDeleteAction.RESTRICT)
+    @JoinColumn(name = "id_employee", nullable = false)
+    private Employee idEmployee;
 
-    @Column(name = "card_number")
-    private String cardNumber;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @OnDelete(action = OnDeleteAction.RESTRICT)
+    @JoinColumn(name = "card_number")
+    private CustomerCard cardNumber;
 
     @ColumnDefault("CURRENT_TIMESTAMP")
     @Column(name = "print_date", nullable = false)

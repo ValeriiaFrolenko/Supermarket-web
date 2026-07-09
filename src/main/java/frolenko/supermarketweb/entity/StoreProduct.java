@@ -3,6 +3,8 @@ package frolenko.supermarketweb.entity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 import java.math.BigDecimal;
 
@@ -18,11 +20,15 @@ public class StoreProduct {
     @Column(name = "upc", nullable = false, length = 12)
     private String upc;
 
-    @Column(name = "upc_prom")
-    private String upcProm;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @OnDelete(action = OnDeleteAction.SET_NULL)
+    @JoinColumn(name = "upc_prom")
+    private StoreProduct upcProm;
 
-    @Column(name = "id_product", nullable = false)
-    private Integer idProduct;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @OnDelete(action = OnDeleteAction.RESTRICT)
+    @JoinColumn(name = "id_product", nullable = false)
+    private Product idProduct;
 
     @Column(name = "selling_price", nullable = false, precision = 13, scale = 4)
     private BigDecimal sellingPrice;

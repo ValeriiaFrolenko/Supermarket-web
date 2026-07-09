@@ -3,6 +3,8 @@ package frolenko.supermarketweb.entity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 @Getter
 @Setter
@@ -17,8 +19,10 @@ public class Product {
     @Column(name = "id_product", nullable = false)
     private Integer id;
 
-    @Column(name = "category_number", nullable = false)
-    private Integer categoryNumber;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @OnDelete(action = OnDeleteAction.RESTRICT)
+    @JoinColumn(name = "category_number", nullable = false)
+    private Category categoryNumber;
 
     @Column(name = "product_name", nullable = false, length = 50)
     private String productName;
