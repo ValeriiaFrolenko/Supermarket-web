@@ -1,11 +1,13 @@
 package frolenko.supermarketweb.query_repository;
 
 import frolenko.supermarketweb.dto.customer_card.CustomerCardListDTO;
+import frolenko.supermarketweb.enums.sortby.CustomerCardSortBy;
 import frolenko.supermarketweb.filter.CustomerCardFilter;
 import frolenko.supermarketweb.utils.JooqConditionUtils;
 import lombok.RequiredArgsConstructor;
 import org.jooq.Condition;
 import org.jooq.DSLContext;
+import org.jooq.Field;
 import org.jooq.SortField;
 import org.springframework.stereotype.Repository;
 
@@ -20,10 +22,18 @@ public class CustomerCardQueryRepository {
 
     private final DSLContext dsl;
 
+    private SortField<?> resolveSortField(CustomerCardSortBy sortBy, boolean asc) {
+        Field<?> field = switch (sortBy) {
+            case SURNAME -> CUSTOMER_CARD.CUST_SURNAME;
+            case DISCOUNT -> CUSTOMER_CARD.PERCENT;
+        };
+        return asc ? field.asc() : field.desc();
+    }
+
     public List<CustomerCardListDTO> findByFilter(CustomerCardFilter filter) {
         List<Condition> conditions = new ArrayList<>();
         SortField<?> sortField = filter.getSortBy() != null
-                ? JooqConditionUtils.toSortField(filter.getSortBy(), filter.isAsc())
+                ? resolveSortField(filter.getSortBy(), filter.isAsc())
                 : CUSTOMER_CARD.CUST_SURNAME.asc();
 
         JooqConditionUtils.addLikeIfNotNull(conditions, CUSTOMER_CARD.CUST_SURNAME, filter.getSurname());

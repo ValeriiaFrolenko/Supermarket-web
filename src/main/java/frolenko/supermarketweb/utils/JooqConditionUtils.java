@@ -1,10 +1,7 @@
 package frolenko.supermarketweb.utils;
 
-import frolenko.supermarketweb.enums.sortby.SortBy;
 import org.jooq.Condition;
 import org.jooq.Field;
-import org.jooq.SortField;
-import org.jooq.impl.DSL;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -31,11 +28,6 @@ public class JooqConditionUtils {
         if (dateTo != null) {
             conditions.add(field.lessOrEqual(dateTo.atTime(23, 59, 59)));
         }
-    }
-
-    public static SortField<?> toSortField(SortBy sortBy, boolean asc) {
-        Field<?> field = DSL.field(DSL.name(sortBy.getColumn()));
-        return asc ? field.asc() : field.desc();
     }
 
     public static <T extends Number & Comparable<?>> void addRangeIfNotNull(List<Condition> conditions, Field<T> field, T from, T to) {
