@@ -10,10 +10,9 @@ public record CheckDetailsDTO(
         String employeeName,
         String cardNumber,
         String customerName,
-        LocalDateTime dateTime,
+        LocalDateTime printDate,
         double sumTotal,
         double vat,
-
         double baseSum,
         double discountAmount
 ) {}

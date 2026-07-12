@@ -8,7 +8,7 @@ import java.time.LocalDateTime;
 public record CheckListDTO(
         String checkNumber,
         String employeeName,
-        LocalDateTime dateTime,
+        LocalDateTime printDate,
         double sumTotal
 ) {
 }
