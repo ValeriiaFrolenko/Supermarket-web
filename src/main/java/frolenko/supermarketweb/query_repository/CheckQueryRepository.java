@@ -2,15 +2,16 @@ package frolenko.supermarketweb.query_repository;
 
 import frolenko.supermarketweb.dto.check.CheckDetailsDTO;
 import frolenko.supermarketweb.dto.check.CheckListDTO;
-import frolenko.supermarketweb.enums.sortby.CheckSortBy;
 import frolenko.supermarketweb.filter.CheckFilter;
 import frolenko.supermarketweb.utils.JooqConditionUtils;
 import lombok.RequiredArgsConstructor;
 import org.jooq.Condition;
 import org.jooq.DSLContext;
-import org.jooq.Field;
 import org.jooq.SortField;
 import org.jooq.impl.DSL;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 
 import java.util.ArrayList;
@@ -25,17 +26,7 @@ public class CheckQueryRepository {
 
     private final DSLContext dsl;
 
-    private SortField<?> resolveSortField(CheckSortBy sortBy, boolean asc) {
-        Field<?> field = switch (sortBy) {
-            case DATE -> CHECK_TABLE.PRINT_DATE;
-            case EMPLOYEE -> EMPLOYEE.EMPL_SURNAME;
-            case SUM_TOTAL -> CHECK_TABLE.SUM_TOTAL;
-        };
-        return asc ? field.asc() : field.desc();
-    }
-
     public Optional<CheckDetailsDTO> findById(String id) {
-
         var employeeName = DSL.concat(EMPLOYEE.EMPL_SURNAME, DSL.val(" "), EMPLOYEE.EMPL_NAME).as("employeeName");
 
         var customerName = DSL.case_()
@@ -69,18 +60,18 @@ public class CheckQueryRepository {
                 .fetchOptionalInto(CheckDetailsDTO.class);
     }
 
-    public List<CheckListDTO> findByFilter(CheckFilter filter) {
+    public Page<CheckListDTO> findByFilter(CheckFilter filter, Pageable pageable) {
         List<Condition> conditions = new ArrayList<>();
-        SortField<?> sortField = filter.getSortBy() != null
-                ? resolveSortField(filter.getSortBy(), filter.isAsc())
-                : CHECK_TABLE.PRINT_DATE.desc();
 
         JooqConditionUtils.addLikeIfNotNull(conditions, CHECK_TABLE.CHECK_NUMBER, filter.getCheckNumber());
         JooqConditionUtils.addLikeIfNotNull(conditions, EMPLOYEE.EMPL_SURNAME, filter.getCashierSurname());
         JooqConditionUtils.addIfNotNull(conditions, EMPLOYEE.ID_EMPLOYEE, filter.getEmployeeId());
         JooqConditionUtils.addDateRangeIfNotNull(conditions, CHECK_TABLE.PRINT_DATE, filter.getDateFrom(), filter.getDateTo());
 
-        return dsl.select(
+        List<SortField<?>> sortFields = JooqConditionUtils.resolveSortFields(
+                pageable, CHECK_TABLE.PRINT_DATE.desc(), CHECK_TABLE, EMPLOYEE);
+
+        List<CheckListDTO> content = dsl.select(
                         CHECK_TABLE.CHECK_NUMBER,
                         DSL.concat(EMPLOYEE.EMPL_SURNAME, DSL.val(" "), EMPLOYEE.EMPL_NAME).as("employeeName"),
                         CHECK_TABLE.PRINT_DATE,
@@ -88,7 +79,17 @@ public class CheckQueryRepository {
                 .from(CHECK_TABLE)
                 .join(EMPLOYEE).on(CHECK_TABLE.ID_EMPLOYEE.eq(EMPLOYEE.ID_EMPLOYEE))
                 .where(conditions)
-                .orderBy(sortField)
+                .orderBy(sortFields)
+                .limit(pageable.getPageSize())
+                .offset(pageable.getOffset())
                 .fetchInto(CheckListDTO.class);
+
+        long total = dsl.selectCount()
+                .from(CHECK_TABLE)
+                .join(EMPLOYEE).on(CHECK_TABLE.ID_EMPLOYEE.eq(EMPLOYEE.ID_EMPLOYEE))
+                .where(conditions)
+                .fetchOne(0, Long.class);
+
+        return new PageImpl<>(content, pageable, total);
     }
 }

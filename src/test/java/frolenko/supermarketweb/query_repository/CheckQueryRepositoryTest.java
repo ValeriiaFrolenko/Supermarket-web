@@ -2,7 +2,6 @@ package frolenko.supermarketweb.query_repository;
 
 import frolenko.supermarketweb.dto.check.CheckDetailsDTO;
 import frolenko.supermarketweb.dto.check.CheckListDTO;
-import frolenko.supermarketweb.enums.sortby.CheckSortBy;
 import frolenko.supermarketweb.filter.CheckFilter;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.BeforeEach;
@@ -11,13 +10,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
 import org.springframework.boot.jooq.test.autoconfigure.JooqTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Comparator;
-import java.util.List;
 import java.util.Optional;
 
 import static frolenko.generated.Tables.*;
@@ -37,7 +38,6 @@ class CheckQueryRepositoryTest {
 
     @BeforeEach
     void setUp() {
-
         dsl.insertInto(EMPLOYEE)
                 .set(EMPLOYEE.ID_EMPLOYEE, "EMP001")
                 .set(EMPLOYEE.PASSWORD_HASH, "hash1")
@@ -103,6 +103,15 @@ class CheckQueryRepositoryTest {
                 .set(CHECK_TABLE.VAT, BigDecimal.valueOf(30))
                 .execute();
 
+        dsl.insertInto(CHECK_TABLE)
+                .set(CHECK_TABLE.CHECK_NUMBER, "XX001")
+                .set(CHECK_TABLE.ID_EMPLOYEE, "EMP001")
+                .set(CHECK_TABLE.CARD_NUMBER, (String) null)
+                .set(CHECK_TABLE.PRINT_DATE, LocalDateTime.of(2024, 6, 1, 10, 0))
+                .set(CHECK_TABLE.SUM_TOTAL, BigDecimal.valueOf(50))
+                .set(CHECK_TABLE.VAT, BigDecimal.valueOf(10))
+                .execute();
+
         dsl.insertInto(CATEGORY)
                 .set(CATEGORY.CATEGORY_NAME, "Food")
                 .execute();
@@ -140,137 +149,187 @@ class CheckQueryRepositoryTest {
                 .set(SALE.PRODUCT_NUMBER, 2)
                 .set(SALE.SELLING_PRICE, BigDecimal.valueOf(50))
                 .execute();
+
+        dsl.insertInto(SALE)
+                .set(SALE.UPC, "123456789012")
+                .set(SALE.CHECK_NUMBER, "CH002")
+                .set(SALE.PRODUCT_NUMBER, 4)
+                .set(SALE.SELLING_PRICE, BigDecimal.valueOf(50))
+                .execute();
     }
 
     @Test
     void findByFilter_emptyFilter_returnsAll() {
-        List<CheckListDTO> result = repository.findByFilter(CheckFilter.builder().build());
-        assertThat(result).hasSize(3);
+        Page<CheckListDTO> result = repository.findByFilter(
+                CheckFilter.builder().build(),
+                PageRequest.of(0, 10)
+        );
+        assertThat(result.getTotalElements()).isEqualTo(4);
+        assertThat(result.getContent()).hasSize(4);
     }
 
     @Test
     void findByFilter_byCheckNumber_returnsOnlyMatching() {
-        CheckFilter filter = CheckFilter.builder()
-                .checkNumber("CH0")
-                .build();
-        List<CheckListDTO> result = repository.findByFilter(filter);
-        assertThat(result).hasSize(3);
-        assertThat(result).allMatch(c -> c.checkNumber().startsWith("CH0"));
+        Page<CheckListDTO> result = repository.findByFilter(
+                CheckFilter.builder().checkNumber("CH0").build(),
+                PageRequest.of(0, 10)
+        );
+        assertThat(result.getTotalElements()).isEqualTo(3);
+        assertThat(result.getContent()).allMatch(c -> c.checkNumber().startsWith("CH0"));
+        assertThat(result.getContent()).noneMatch(c -> c.checkNumber().startsWith("XX"));
     }
 
     @Test
     void findByFilter_byCashierSurname_returnsOnlyMatching() {
-        CheckFilter filter = CheckFilter.builder()
-                .cashierSurname("Koval")
-                .build();
-        List<CheckListDTO> result = repository.findByFilter(filter);
-        assertThat(result).hasSize(2);
-        assertThat(result).allMatch(c -> c.employeeName().startsWith("Kovalenko"));
+        Page<CheckListDTO> result = repository.findByFilter(
+                CheckFilter.builder().cashierSurname("Koval").build(),
+                PageRequest.of(0, 10)
+        );
+        assertThat(result.getTotalElements()).isEqualTo(3);
+        assertThat(result.getContent()).allMatch(c -> c.employeeName().startsWith("Kovalenko"));
     }
 
     @Test
     void findByFilter_byEmployeeId_returnsOnlyMatching() {
-        CheckFilter filter = CheckFilter.builder()
-                .employeeId("EMP002")
-                .build();
-        List<CheckListDTO> result = repository.findByFilter(filter);
-        assertThat(result).hasSize(1);
-        assertThat(result.get(0).checkNumber()).isEqualTo("CH003");
+        Page<CheckListDTO> result = repository.findByFilter(
+                CheckFilter.builder().employeeId("EMP002").build(),
+                PageRequest.of(0, 10)
+        );
+        assertThat(result.getTotalElements()).isEqualTo(1);
+        assertThat(result.getContent().getFirst().checkNumber()).isEqualTo("CH003");
     }
 
     @Test
     void findByFilter_byDateFrom_returnsOnlyMatching() {
-        CheckFilter filter = CheckFilter.builder()
-                .dateFrom(LocalDate.of(2024, 4, 1))
-                .build();
-        List<CheckListDTO> result = repository.findByFilter(filter);
-        assertThat(result).hasSize(2);
-        assertThat(result).allMatch(c -> !c.printDate().isBefore(LocalDateTime.of(2024, 4, 1, 0, 0)));
+        Page<CheckListDTO> result = repository.findByFilter(
+                CheckFilter.builder().dateFrom(LocalDate.of(2024, 4, 1)).build(),
+                PageRequest.of(0, 10)
+        );
+        assertThat(result.getTotalElements()).isEqualTo(3);
+        assertThat(result.getContent()).allMatch(c -> !c.printDate().isBefore(LocalDateTime.of(2024, 4, 1, 0, 0)));
     }
 
     @Test
     void findByFilter_byDateTo_returnsOnlyMatching() {
-        CheckFilter filter = CheckFilter.builder()
-                .dateTo(LocalDate.of(2024, 4, 30))
-                .build();
-        List<CheckListDTO> result = repository.findByFilter(filter);
-        assertThat(result).hasSize(2);
-        assertThat(result).allMatch(c -> !c.printDate().isAfter(LocalDateTime.of(2024, 4, 30, 23, 59, 59)));
+        Page<CheckListDTO> result = repository.findByFilter(
+                CheckFilter.builder().dateTo(LocalDate.of(2024, 4, 30)).build(),
+                PageRequest.of(0, 10)
+        );
+        assertThat(result.getTotalElements()).isEqualTo(2);
+        assertThat(result.getContent()).allMatch(c -> !c.printDate().isAfter(LocalDateTime.of(2024, 4, 30, 23, 59, 59)));
     }
 
     @Test
     void findByFilter_byDateRange_returnsOnlyMatching() {
-        CheckFilter filter = CheckFilter.builder()
-                .dateFrom(LocalDate.of(2024, 4, 1))
-                .dateTo(LocalDate.of(2024, 4, 30))
-                .build();
-        List<CheckListDTO> result = repository.findByFilter(filter);
-        assertThat(result).hasSize(1);
-        assertThat(result.get(0).checkNumber()).isEqualTo("CH002");
+        Page<CheckListDTO> result = repository.findByFilter(
+                CheckFilter.builder()
+                        .dateFrom(LocalDate.of(2024, 4, 1))
+                        .dateTo(LocalDate.of(2024, 4, 30))
+                        .build(),
+                PageRequest.of(0, 10)
+        );
+        assertThat(result.getTotalElements()).isEqualTo(1);
+        assertThat(result.getContent().getFirst().checkNumber()).isEqualTo("CH002");
+    }
+
+    @Test
+    void findByFilter_byCashierSurnameAndDateRange_returnsOnlyMatching() {
+        Page<CheckListDTO> result = repository.findByFilter(
+                CheckFilter.builder()
+                        .cashierSurname("Koval")
+                        .dateFrom(LocalDate.of(2024, 4, 1))
+                        .dateTo(LocalDate.of(2024, 4, 30))
+                        .build(),
+                PageRequest.of(0, 10)
+        );
+        assertThat(result.getTotalElements()).isEqualTo(1);
+        assertThat(result.getContent().getFirst().checkNumber()).isEqualTo("CH002");
     }
 
     @Test
     void findByFilter_noMatch_returnsEmpty() {
-        CheckFilter filter = CheckFilter.builder()
-                .cashierSurname("Nonexistent")
-                .build();
-        List<CheckListDTO> result = repository.findByFilter(filter);
-        assertThat(result).isEmpty();
+        Page<CheckListDTO> result = repository.findByFilter(
+                CheckFilter.builder().cashierSurname("Nonexistent").build(),
+                PageRequest.of(0, 10)
+        );
+        assertThat(result.getTotalElements()).isEqualTo(0);
+        assertThat(result.getContent()).isEmpty();
     }
 
     @Test
     void findByFilter_defaultSort_returnsSortedByDateDesc() {
-        List<CheckListDTO> result = repository.findByFilter(CheckFilter.builder().build());
-        assertThat(result).isSortedAccordingTo(
+        Page<CheckListDTO> result = repository.findByFilter(
+                CheckFilter.builder().build(),
+                PageRequest.of(0, 10)
+        );
+        assertThat(result.getContent()).isSortedAccordingTo(
                 Comparator.comparing(CheckListDTO::printDate).reversed()
         );
     }
 
     @Test
     void findByFilter_sortByDateAsc_returnsSortedAsc() {
-        CheckFilter filter = CheckFilter.builder()
-                .sortBy(CheckSortBy.DATE)
-                .asc(true)
-                .build();
-        List<CheckListDTO> result = repository.findByFilter(filter);
-        assertThat(result).isSortedAccordingTo(
+        Page<CheckListDTO> result = repository.findByFilter(
+                CheckFilter.builder().build(),
+                PageRequest.of(0, 10, Sort.by(Sort.Direction.ASC, "print_date"))
+        );
+        assertThat(result.getContent()).isSortedAccordingTo(
                 Comparator.comparing(CheckListDTO::printDate)
         );
     }
 
     @Test
     void findByFilter_sortBySumTotalDesc_returnsSortedDesc() {
-        CheckFilter filter = CheckFilter.builder()
-                .sortBy(CheckSortBy.SUM_TOTAL)
-                .asc(false)
-                .build();
-        List<CheckListDTO> result = repository.findByFilter(filter);
-        assertThat(result).isSortedAccordingTo(
+        Page<CheckListDTO> result = repository.findByFilter(
+                CheckFilter.builder().build(),
+                PageRequest.of(0, 10, Sort.by(Sort.Direction.DESC, "sum_total"))
+        );
+        assertThat(result.getContent()).isSortedAccordingTo(
                 (a, b) -> Double.compare(b.sumTotal(), a.sumTotal())
         );
     }
 
     @Test
-    void findByFilter_sortByEmployeeSurnameAsc_returnsSortedAsc() {
-        CheckFilter filter = CheckFilter.builder()
-                .sortBy(CheckSortBy.EMPLOYEE)
-                .asc(true)
-                .build();
-        List<CheckListDTO> result = repository.findByFilter(filter);
-        assertThat(result).isSortedAccordingTo(
-                Comparator.comparing(CheckListDTO::employeeName)
+    void findByFilter_sortByEmployeeSurnameAsc_firstResultIsBondarenko() {
+        Page<CheckListDTO> result = repository.findByFilter(
+                CheckFilter.builder().build(),
+                PageRequest.of(0, 10, Sort.by(Sort.Direction.ASC, "empl_surname"))
         );
+        assertThat(result.getContent().getFirst().employeeName()).startsWith("Bondarenko");
     }
 
     @Test
-    void findById_existingCheck_returnsCorrectDetails() {
+    void findByFilter_pagination_returnsCorrectPage() {
+        Page<CheckListDTO> result = repository.findByFilter(
+                CheckFilter.builder().build(),
+                PageRequest.of(0, 2, Sort.by(Sort.Direction.DESC, "print_date"))
+        );
+        assertThat(result.getTotalElements()).isEqualTo(4);
+        assertThat(result.getContent()).hasSize(2);
+        assertThat(result.getTotalPages()).isEqualTo(2);
+    }
+
+    @Test
+    void findByFilter_secondPage_returnsRemainingItems() {
+        Page<CheckListDTO> result = repository.findByFilter(
+                CheckFilter.builder().build(),
+                PageRequest.of(1, 2, Sort.by(Sort.Direction.DESC, "print_date"))
+        );
+        assertThat(result.getTotalElements()).isEqualTo(4);
+        assertThat(result.getContent()).hasSize(2);
+    }
+
+    @Test
+    void findById_existingCheckWithCustomerCard_returnsCorrectDetails() {
         Optional<CheckDetailsDTO> result = repository.findById("CH001");
         assertThat(result).isPresent();
         assertThat(result.get().checkNumber()).isEqualTo("CH001");
         assertThat(result.get().employeeName()).isEqualTo("Kovalenko Ivan");
         assertThat(result.get().cardNumber()).isEqualTo("CC001");
         assertThat(result.get().customerName()).isEqualTo("Petrenko Maria");
+        assertThat(result.get().printDate()).isEqualTo(LocalDateTime.of(2024, 3, 15, 10, 0));
         assertThat(result.get().sumTotal()).isEqualTo(90.0);
+        assertThat(result.get().vat()).isEqualTo(18.0);
         assertThat(result.get().baseSum()).isEqualTo(100.0);
         assertThat(result.get().discountAmount()).isEqualTo(10.0);
     }
@@ -281,6 +340,14 @@ class CheckQueryRepositoryTest {
         assertThat(result).isPresent();
         assertThat(result.get().cardNumber()).isNull();
         assertThat(result.get().customerName()).isNull();
+    }
+
+    @Test
+    void findById_checkWithNoDiscount_returnsZeroDiscountAmount() {
+        Optional<CheckDetailsDTO> result = repository.findById("CH002");
+        assertThat(result).isPresent();
+        assertThat(result.get().baseSum()).isEqualTo(200.0);
+        assertThat(result.get().discountAmount()).isEqualTo(0.0);
     }
 
     @Test

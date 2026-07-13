@@ -1,11 +1,13 @@
 package frolenko.supermarketweb.utils;
 
-import org.jooq.Condition;
-import org.jooq.Field;
+import org.jooq.*;
+import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 public class JooqConditionUtils {
 
@@ -37,5 +39,22 @@ public class JooqConditionUtils {
         if (to != null) {
             conditions.add(field.lessOrEqual(to));
         }
+    }
+
+    public static List<SortField<?>> resolveSortFields(Pageable pageable, SortField<?> defaultField, Table<?>... tables) {
+        List<SortField<?>> sortFields = pageable.getSort().stream()
+                .map(order -> {
+                    Field<?> field = Arrays.stream(tables)
+                            .map(t -> t.field(order.getProperty()))
+                            .filter(Objects::nonNull)
+                            .findFirst()
+                            .orElse(null);
+                    if (field == null) return null;
+                    return order.isAscending() ? field.asc() : field.desc();
+                })
+                .filter(Objects::nonNull)
+                .toList();
+
+        return sortFields.isEmpty() ? List.of(defaultField) : sortFields;
     }
 }

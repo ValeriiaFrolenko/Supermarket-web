@@ -1,7 +1,6 @@
 package frolenko.supermarketweb.query_repository;
 
 import frolenko.supermarketweb.dto.customer_card.CustomerCardListDTO;
-import frolenko.supermarketweb.enums.sortby.CustomerCardSortBy;
 import frolenko.supermarketweb.filter.CustomerCardFilter;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.BeforeEach;
@@ -10,10 +9,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
 import org.springframework.boot.jooq.test.autoconfigure.JooqTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.util.Comparator;
-import java.util.List;
 
 import static frolenko.generated.Tables.CUSTOMER_CARD;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -59,123 +60,146 @@ class CustomerCardQueryRepositoryTest {
 
     @Test
     void findByFilter_emptyFilter_returnsAll() {
-        List<CustomerCardListDTO> result = repository.findByFilter(CustomerCardFilter.builder().build());
-        assertThat(result).hasSize(3);
+        Page<CustomerCardListDTO> result = repository.findByFilter(
+                CustomerCardFilter.builder().build(),
+                PageRequest.of(0, 10)
+        );
+        assertThat(result.getTotalElements()).isEqualTo(3);
+        assertThat(result.getContent()).hasSize(3);
     }
 
     @Test
     void findByFilter_bySurname_returnsOnlyMatching() {
-        CustomerCardFilter filter = CustomerCardFilter.builder()
-                .surname("Andr")
-                .build();
-        List<CustomerCardListDTO> result = repository.findByFilter(filter);
-        assertThat(result).hasSize(2);
-        assertThat(result).allMatch(c -> c.custSurname().startsWith("Andr"));
+        Page<CustomerCardListDTO> result = repository.findByFilter(
+                CustomerCardFilter.builder().surname("Andr").build(),
+                PageRequest.of(0, 10)
+        );
+        assertThat(result.getTotalElements()).isEqualTo(2);
+        assertThat(result.getContent()).allMatch(c -> c.custSurname().startsWith("Andr"));
     }
 
     @Test
     void findByFilter_byPhoneNumber_returnsOnlyMatching() {
-        CustomerCardFilter filter = CustomerCardFilter.builder()
-                .phoneNumber("+380991234567")
-                .build();
-        List<CustomerCardListDTO> result = repository.findByFilter(filter);
-        assertThat(result).hasSize(1);
-        assertThat(result.getFirst().cardNumber()).isEqualTo("CC001");
+        Page<CustomerCardListDTO> result = repository.findByFilter(
+                CustomerCardFilter.builder().phoneNumber("+380991234567").build(),
+                PageRequest.of(0, 10)
+        );
+        assertThat(result.getTotalElements()).isEqualTo(1);
+        assertThat(result.getContent().getFirst().cardNumber()).isEqualTo("CC001");
     }
 
     @Test
     void findByFilter_byDiscountFrom_returnsOnlyMatching() {
-        CustomerCardFilter filter = CustomerCardFilter.builder()
-                .discountFrom(10)
-                .build();
-        List<CustomerCardListDTO> result = repository.findByFilter(filter);
-        assertThat(result).hasSize(2);
-        assertThat(result).allMatch(c -> c.percent() >= 10);
+        Page<CustomerCardListDTO> result = repository.findByFilter(
+                CustomerCardFilter.builder().discountFrom(10).build(),
+                PageRequest.of(0, 10)
+        );
+        assertThat(result.getTotalElements()).isEqualTo(2);
+        assertThat(result.getContent()).allMatch(c -> c.percent() >= 10);
     }
 
     @Test
     void findByFilter_byDiscountTo_returnsOnlyMatching() {
-        CustomerCardFilter filter = CustomerCardFilter.builder()
-                .discountTo(10)
-                .build();
-        List<CustomerCardListDTO> result = repository.findByFilter(filter);
-        assertThat(result).hasSize(2);
-        assertThat(result).allMatch(c -> c.percent() <= 10);
+        Page<CustomerCardListDTO> result = repository.findByFilter(
+                CustomerCardFilter.builder().discountTo(10).build(),
+                PageRequest.of(0, 10)
+        );
+        assertThat(result.getTotalElements()).isEqualTo(2);
+        assertThat(result.getContent()).allMatch(c -> c.percent() <= 10);
     }
 
     @Test
     void findByFilter_byDiscountRange_returnsOnlyMatching() {
-        CustomerCardFilter filter = CustomerCardFilter.builder()
-                .discountFrom(8)
-                .discountTo(12)
-                .build();
-        List<CustomerCardListDTO> result = repository.findByFilter(filter);
-        assertThat(result).hasSize(1);
-        assertThat(result.getFirst().cardNumber()).isEqualTo("CC001");
+        Page<CustomerCardListDTO> result = repository.findByFilter(
+                CustomerCardFilter.builder().discountFrom(8).discountTo(12).build(),
+                PageRequest.of(0, 10)
+        );
+        assertThat(result.getTotalElements()).isEqualTo(1);
+        assertThat(result.getContent().getFirst().cardNumber()).isEqualTo("CC001");
     }
 
     @Test
     void findByFilter_bySurnameAndDiscountRange_returnsOnlyMatching() {
-        CustomerCardFilter filter = CustomerCardFilter.builder()
-                .surname("Andr")
-                .discountFrom(12)
-                .discountTo(20)
-                .build();
-        List<CustomerCardListDTO> result = repository.findByFilter(filter);
-        assertThat(result).hasSize(1);
-        assertThat(result.getFirst().cardNumber()).isEqualTo("CC003");
+        Page<CustomerCardListDTO> result = repository.findByFilter(
+                CustomerCardFilter.builder().surname("Andr").discountFrom(12).discountTo(20).build(),
+                PageRequest.of(0, 10)
+        );
+        assertThat(result.getTotalElements()).isEqualTo(1);
+        assertThat(result.getContent().getFirst().cardNumber()).isEqualTo("CC003");
     }
 
     @Test
     void findByFilter_noMatch_returnsEmpty() {
-        CustomerCardFilter filter = CustomerCardFilter.builder()
-                .surname("Nonexistent")
-                .build();
-        List<CustomerCardListDTO> result = repository.findByFilter(filter);
-        assertThat(result).isEmpty();
+        Page<CustomerCardListDTO> result = repository.findByFilter(
+                CustomerCardFilter.builder().surname("Nonexistent").build(),
+                PageRequest.of(0, 10)
+        );
+        assertThat(result.getTotalElements()).isEqualTo(0);
+        assertThat(result.getContent()).isEmpty();
     }
 
     @Test
     void findByFilter_defaultSort_returnsSortedBySurnameAsc() {
-        List<CustomerCardListDTO> result = repository.findByFilter(CustomerCardFilter.builder().build());
-        assertThat(result).isSortedAccordingTo(
+        Page<CustomerCardListDTO> result = repository.findByFilter(
+                CustomerCardFilter.builder().build(),
+                PageRequest.of(0, 10)
+        );
+        assertThat(result.getContent()).isSortedAccordingTo(
                 Comparator.comparing(CustomerCardListDTO::custSurname)
         );
     }
 
     @Test
     void findByFilter_sortBySurnameAsc_returnsSortedAsc() {
-        CustomerCardFilter filter = CustomerCardFilter.builder()
-                .sortBy(CustomerCardSortBy.SURNAME)
-                .asc(true)
-                .build();
-        List<CustomerCardListDTO> result = repository.findByFilter(filter);
-        assertThat(result).isSortedAccordingTo(
+        Page<CustomerCardListDTO> result = repository.findByFilter(
+                CustomerCardFilter.builder().build(),
+                PageRequest.of(0, 10, Sort.by(Sort.Direction.ASC, "cust_surname"))
+        );
+        assertThat(result.getContent()).isSortedAccordingTo(
                 Comparator.comparing(CustomerCardListDTO::custSurname)
         );
     }
 
     @Test
-    void findByFilter_sortByPercentAsc_returnsSortedAsc() {
-        CustomerCardFilter filter = CustomerCardFilter.builder()
-                .sortBy(CustomerCardSortBy.DISCOUNT)
-                .asc(true)
-                .build();
-        List<CustomerCardListDTO> result = repository.findByFilter(filter);
-        assertThat(result).isSortedAccordingTo(
+    void findByFilter_sortByDiscountAsc_returnsSortedAsc() {
+        Page<CustomerCardListDTO> result = repository.findByFilter(
+                CustomerCardFilter.builder().build(),
+                PageRequest.of(0, 10, Sort.by(Sort.Direction.ASC, "percent"))
+        );
+        assertThat(result.getContent()).isSortedAccordingTo(
                 Comparator.comparingInt(CustomerCardListDTO::percent)
         );
     }
 
     @Test
-    void findByFilter_sortByPercentDesc_returnsSortedDesc() {
-        CustomerCardFilter filter = CustomerCardFilter.builder()
-                .sortBy(CustomerCardSortBy.DISCOUNT)
-                .asc(false)
-                .build();
-        List<CustomerCardListDTO> result = repository.findByFilter(filter);
-        assertThat(result).isSortedAccordingTo(
+    void findByFilter_sortByDiscountDesc_returnsSortedDesc() {
+        Page<CustomerCardListDTO> result = repository.findByFilter(
+                CustomerCardFilter.builder().build(),
+                PageRequest.of(0, 10, Sort.by(Sort.Direction.DESC, "percent"))
+        );
+        assertThat(result.getContent()).isSortedAccordingTo(
                 (a, b) -> Integer.compare(b.percent(), a.percent())
         );
+    }
+
+    @Test
+    void findByFilter_pagination_returnsCorrectPage() {
+        Page<CustomerCardListDTO> result = repository.findByFilter(
+                CustomerCardFilter.builder().build(),
+                PageRequest.of(0, 2, Sort.by(Sort.Direction.ASC, "cust_surname"))
+        );
+        assertThat(result.getTotalElements()).isEqualTo(3);
+        assertThat(result.getContent()).hasSize(2);
+        assertThat(result.getTotalPages()).isEqualTo(2);
+    }
+
+    @Test
+    void findByFilter_secondPage_returnsRemainingItems() {
+        Page<CustomerCardListDTO> result = repository.findByFilter(
+                CustomerCardFilter.builder().build(),
+                PageRequest.of(1, 2, Sort.by(Sort.Direction.ASC, "cust_surname"))
+        );
+        assertThat(result.getTotalElements()).isEqualTo(3);
+        assertThat(result.getContent()).hasSize(1);
     }
 }
