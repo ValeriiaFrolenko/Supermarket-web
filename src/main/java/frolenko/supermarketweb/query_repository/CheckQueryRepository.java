@@ -88,7 +88,8 @@ public class CheckQueryRepository {
                 .from(CHECK_TABLE)
                 .join(EMPLOYEE).on(CHECK_TABLE.ID_EMPLOYEE.eq(EMPLOYEE.ID_EMPLOYEE))
                 .where(conditions)
-                .fetchOne(0, Long.class);
+                .fetchOptional(0, Long.class)
+                .orElse(0L);
 
         return new PageImpl<>(content, pageable, total);
     }

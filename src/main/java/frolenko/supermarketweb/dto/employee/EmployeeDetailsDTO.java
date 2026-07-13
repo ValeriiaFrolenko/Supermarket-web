@@ -7,11 +7,11 @@ import java.time.LocalDate;
 
 @Builder
 public record EmployeeDetailsDTO(
-        String id,
-        String surname,
-        String name,
-        String patronymic,
-        EmployeeRole role,
+        String idEmployee,
+        String emplSurname,
+        String emplName,
+        String emplPatronymic,
+        EmployeeRole emplRole,
         double salary,
         LocalDate dateOfBirth,
         LocalDate dateOfStart,

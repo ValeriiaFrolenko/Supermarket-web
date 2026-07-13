@@ -49,7 +49,8 @@ public class CustomerCardQueryRepository {
         long total = dsl.selectCount()
                 .from(CUSTOMER_CARD)
                 .where(conditions)
-                .fetchOne(0, Long.class);
+                .fetchOptional(0, Long.class)
+                .orElse(0L);
 
         return new PageImpl<>(content, pageable, total);
     }
