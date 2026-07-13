@@ -4,9 +4,9 @@ import lombok.Builder;
 
 @Builder
 public record ProductDetailsDTO(
-        int id,
-        String name,
-        int categoryId,
+        int idProduct,
+        String productName,
+        int categoryNumber,
         String categoryName,
         String manufacturer,
         String characteristics
