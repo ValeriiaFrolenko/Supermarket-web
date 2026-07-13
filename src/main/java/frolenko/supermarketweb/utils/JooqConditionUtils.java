@@ -23,6 +23,12 @@ public class JooqConditionUtils {
         }
     }
 
+    public static void addContainsIfNotNull(List<Condition> conditions, Field<String> field, String value) {
+        if (value != null) {
+            conditions.add(field.containsIgnoreCase(value));
+        }
+    }
+
     public static void addDateRangeIfNotNull(List<Condition> conditions, Field<LocalDateTime> field, LocalDate dateFrom, LocalDate dateTo) {
         if (dateFrom != null) {
             conditions.add(field.greaterOrEqual(dateFrom.atStartOfDay()));

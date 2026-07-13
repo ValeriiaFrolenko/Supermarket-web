@@ -3,9 +3,9 @@ import lombok.Builder;
 
 @Builder
 public record StoreProductListDTO(
-        String UPC,
+        String upc,
         String productName,
-        double price,
-        int quantity,
-        Boolean promotional
+        double sellingPrice,
+        int productNumber,
+        Boolean promotionalProduct
 ) {}

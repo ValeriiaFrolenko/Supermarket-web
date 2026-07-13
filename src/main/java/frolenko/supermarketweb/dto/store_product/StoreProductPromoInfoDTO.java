@@ -4,7 +4,7 @@ import lombok.Builder;
 
 @Builder
 public record StoreProductPromoInfoDTO(
-        Integer productId,
+        Integer idProduct,
         boolean usedAsPromoBase
 ) {
 }
