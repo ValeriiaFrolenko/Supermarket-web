@@ -11,5 +11,5 @@ public record SalesAnalyticsDTO(
         double        totalAmount,
         String        checkNumber,
         String        cashierName,
-        LocalDateTime dateTime
+        LocalDateTime printDate
 ) {}
