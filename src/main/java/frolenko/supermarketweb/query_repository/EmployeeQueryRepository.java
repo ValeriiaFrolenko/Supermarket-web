@@ -1,7 +1,6 @@
 package frolenko.supermarketweb.query_repository;
 
 import frolenko.supermarketweb.dto.employee.EmployeeListDTO;
-import frolenko.supermarketweb.enums.employee.EmployeeRole;
 import frolenko.supermarketweb.filter.EmployeeFilter;
 import frolenko.supermarketweb.utils.JooqConditionUtils;
 import lombok.RequiredArgsConstructor;

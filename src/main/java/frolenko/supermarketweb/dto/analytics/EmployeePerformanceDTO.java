@@ -4,7 +4,7 @@ import lombok.Builder;
 
 @Builder
 public record EmployeePerformanceDTO(
-        String employeeId,
+        String idEmployee,
         String cashierName,
         int receiptCount,
         double totalAmount
